@@ -37,7 +37,7 @@ namespace LandingHeight
             {
                 foreach (Part p in FlightGlobals.ActiveVessel.Parts)
                 {
-                    if (p.physicalSignificance == Part.PhysicalSignificance.FULL) //only check part if it has physical significance
+                    if (p.collider.enabled) //only check part if it has collider enabled
                     {
                         Vector3 partEdge = p.collider.ClosestPointOnBounds(FlightGlobals.currentMainBody.position); //find collider edge closest to ground
                         RaycastHit pHit;
