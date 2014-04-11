@@ -74,7 +74,7 @@ namespace LandingHeight
                         RaycastHit pHit;
                         Ray pRayDown = new Ray(partEdge, FlightGlobals.currentMainBody.position);
                         LayerMask pRayMask = 33792; //layermask does not ignore layer 0, why?
-                        if (Physics.Raycast(pRayDown, out pHit,Mathf.Infinity ,pRayMask)) //cast ray
+                        if (Physics.Raycast(pRayDown, out pHit,(float)(FlightGlobals.ActiveVessel.mainBody.Radius + FlightGlobals.ActiveVessel.altitude),pRayMask)) //cast ray
                         {
 
                             if (firstRay) //first ray this update, always set height to this
