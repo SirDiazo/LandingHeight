@@ -68,7 +68,9 @@ namespace LandingHeight
 
                 foreach (Part p in partToRay)
                 {
-                    if (p.collider.enabled) //only check part if it has collider enabled
+                    try
+                    {
+                        if (p.collider.enabled) //only check part if it has collider enabled
                     {
                         Vector3 partEdge = p.collider.ClosestPointOnBounds(FlightGlobals.currentMainBody.position); //find collider edge closest to ground
                         RaycastHit pHit;
@@ -103,6 +105,12 @@ namespace LandingHeight
                             firstRay = false;
                         }
                     }
+                }
+                catch
+                {
+                    landHeight = FlightGlobals.ActiveVessel.altitude;
+                    firstRay = false;
+                }
 
                 }
                 if (landHeight < 1) //if we are in the air, always display an altitude of at least 1
