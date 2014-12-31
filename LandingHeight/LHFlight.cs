@@ -13,6 +13,7 @@ namespace LandingHeight
         public void LateUpdate() //modify UI in late update or KSP default overrides afaik
         {
 
+            print(FlightUIController.speedDisplayMode);
             if (FlightUIController.speedDisplayMode == FlightUIController.SpeedDisplayModes.Surface) //only override if in surface mode
             {
                 FlightUIController UI = FlightUIController.fetch;
@@ -101,14 +102,14 @@ namespace LandingHeight
                         }
                         else if (!firstRay) //error trap, ray hit nothing
                         {
-                            landHeight = FlightGlobals.ActiveVessel.altitude;
+                            landHeight = Math.Min(landHeight,FlightGlobals.ActiveVessel.altitude - FlightGlobals.ActiveVessel.pqsAltitude);
                             firstRay = false;
                         }
                     }
                 }
                 catch
                 {
-                    landHeight = FlightGlobals.ActiveVessel.altitude;
+                    landHeight = FlightGlobals.ActiveVessel.altitude - FlightGlobals.ActiveVessel.pqsAltitude;
                     firstRay = false;
                 }
 
