@@ -13,7 +13,7 @@ namespace LandingHeight
         public void LateUpdate() //modify UI in late update or KSP default overrides afaik
         {
 
-            print(FlightUIController.speedDisplayMode);
+            //print(FlightUIController.speedDisplayMode);
             if (FlightUIController.speedDisplayMode == FlightUIController.SpeedDisplayModes.Surface) //only override if in surface mode
             {
                 FlightUIController UI = FlightUIController.fetch;
