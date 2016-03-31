@@ -4,21 +4,43 @@ using UnityEngine;
 
 
 
+
 namespace LandingHeight
 {
     [KSPAddon(KSPAddon.Startup.Flight, false)]
     public class LHFlight : MonoBehaviour
     {
+        private KSP.UI.Screens.Flight.AltitudeTumbler _tumbler;
+        //public void Start()
+        //{
+        //    Debug.Log("Landing Height v1.5 start.");
+        //}
         
         public void LateUpdate() //modify UI in late update or KSP default overrides afaik
         {
 
-            //print(FlightUIController.speedDisplayMode);
-            if (FlightUIController.speedDisplayMode == FlightUIController.SpeedDisplayModes.Surface) //only override if in surface mode
+           // print(FlightUIController.speedDisplayMode);
+            try
             {
-                FlightUIController UI = FlightUIController.fetch;
-                UI.alt.setValue(heightToLand());
+                if (_tumbler == null || _tumbler.tumbler == null)
+                {
+                    _tumbler = UnityEngine.Object.FindObjectOfType<KSP.UI.Screens.Flight.AltitudeTumbler>();
+                }
+                if (FlightGlobals.speedDisplayMode == FlightGlobals.SpeedDisplayModes.Surface) //only override if in surface mode
+                {
+                    //UnityEngine.Object[] tumblers = UnityEngine.Object.FindObjectsOfType<KSP.UI.Screens.Flight.AltitudeTumbler>();
+                    //Debug.Log("cnt " + tumblers.Length);
+                    //FlightUIController.speedDisplayMode.
+                    //FlightUIController UI = FlightUIController.fetch;
+                    //UI.alt.setValue(heightToLand());
+                    _tumbler.tumbler.SetValue(heightToLand());
+                }
             }
+            catch
+            {
+                //no tumbler object found, we hit this on scene change, silently fail
+            }
+            
            
         }
 
