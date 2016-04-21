@@ -34,10 +34,13 @@ namespace LandingHeight
                     //FlightUIController UI = FlightUIController.fetch;
                     //UI.alt.setValue(heightToLand());
                     _tumbler.tumbler.SetValue(heightToLand());
+                    //Debug.Log(FlightUIController.fetch.alt.
+                    //FlightUIController.fetch.alt.setValue(heightToLand());
                 }
             }
-            catch
+            catch(Exception e)
             {
+                //Debug.Log("LH " + e);
                 //no tumbler object found, we hit this on scene change, silently fail
             }
             
