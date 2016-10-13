@@ -11,10 +11,10 @@ namespace LandingHeight
     public class LHFlight : MonoBehaviour
     {
         private KSP.UI.Screens.Flight.AltitudeTumbler _tumbler;
-        //public void Start()
-        //{
-        //    Debug.Log("Landing Height v1.5 start.");
-        //}
+        public void Start()
+        {
+            Debug.Log("Landing Height v1.7 start.");
+        }
         
         public void LateUpdate() //modify UI in late update or KSP default overrides afaik
         {
@@ -91,7 +91,7 @@ namespace LandingHeight
                     }
 
                 }
-
+                Vector3 actualClosestPointOnBounds = new Vector3();
                 foreach (Part p in partToRay)
                 {
                     try
@@ -109,14 +109,18 @@ namespace LandingHeight
                             {
 
                                         landHeight = pHit.distance;
-                                
+                                actualClosestPointOnBounds = partEdge;
                                 firstRay = false;
                             }
                             else
                             {
                                 
-                                        landHeight = Math.Min(landHeight, pHit.distance);
-                                    
+                                       // landHeight = Math.Min(landHeight, pHit.distance);
+                                    if(pHit.distance < landHeight)
+                                    {
+                                        landHeight = pHit.distance;
+                                        actualClosestPointOnBounds = partEdge;
+                                    }
                               
                             }
                             //if (pHit.transform.gameObject.layer != 10 && pHit.transform.gameObject.layer != 15)  //Error trap, ray should only hit layers 10 and 15
@@ -139,6 +143,19 @@ namespace LandingHeight
                 }
 
                 }
+
+                //sanity checks for hitting invisible object nowhere near the ground
+                if (landHeight > FlightGlobals.ActiveVessel.altitude - FlightGlobals.ActiveVessel.pqsAltitude + 10) //distance returned is 10m greater then distance from vessel CoM to ground, raycast missed the PQS layer somehow?
+                {
+                    Debug.Log("LandingHeight sanity check: Returned height greater then vessel CoM height.");
+                    landHeight = FlightGlobals.ActiveVessel.altitude - FlightGlobals.ActiveVessel.pqsAltitude;
+                }
+                else if(actualClosestPointOnBounds != Vector3.zero && landHeight < (FlightGlobals.ActiveVessel.altitude - FlightGlobals.ActiveVessel.pqsAltitude) - (Vector3.Distance(actualClosestPointOnBounds,FlightGlobals.ActiveVessel.GetWorldPos3D())*1.5 )) //landHeight is less then vessel.CoM height minus 150% of the distance between com and raycast point. note these points are not on a straight line.
+                {
+                    Debug.Log("LandingHeight sanity check: Returned height way too small " + landHeight + "|" + FlightGlobals.ActiveVessel.altitude +"|-|" + FlightGlobals.ActiveVessel.pqsAltitude + "||" + (Vector3.Distance(actualClosestPointOnBounds, FlightGlobals.ActiveVessel.GetWorldPos3D()) * 1.5));
+                    landHeight = FlightGlobals.ActiveVessel.altitude - FlightGlobals.ActiveVessel.pqsAltitude;
+                }
+
                 if (landHeight < 1) //if we are in the air, always display an altitude of at least 1
                 {
                     landHeight = 1;
@@ -153,6 +170,8 @@ namespace LandingHeight
                 }
             }
             
+            
+
             return landHeight;
         }
     }
