@@ -11,10 +11,10 @@ namespace LandingHeight
     public class LHFlight : MonoBehaviour
     {
         private KSP.UI.Screens.Flight.AltitudeTumbler _tumbler;
-        //public void Start()
-        //{
-        //    Debug.Log("Landing Height v1.5 start.");
-        //}
+        public void Start()
+        {
+            Debug.Log("Landing Height v1.9 start.");
+        }
 
         public void LateUpdate() //modify UI in late update or KSP default overrides afaik
         {
@@ -38,7 +38,7 @@ namespace LandingHeight
                     //FlightUIController.fetch.alt.setValue(heightToLand());
                 }
             }
-            catch (Exception e)
+            catch
             {
                 //Debug.Log("LH " + e);
                 //no tumbler object found, we hit this on scene change, silently fail
@@ -97,36 +97,66 @@ namespace LandingHeight
 
                 }
 
-                //Debug.Log("LH Alt " + FlightGlobals.ActiveVessel.pqsAltitude + "|" + FlightGlobals.ActiveVessel.altitude);
+                ////test code START
+                //GameObject go = pHit.collider.gameObject;
+                //Debug.Log("LH Hit GO " + go.layer + "|" + go.name + "|" + go.tag +"|"+go.GetType()+"|"+pHit.distance);
+                //if(go.GetComponent<PQ>() != null)
+                //{
+                //    Debug.Log("LH Hit PQS!");
+                //}
+                //else
+                //{
+                //    Debug.Log("LH Hit something else");
+                //}
+                //foreach (Component co in go.GetComponents<UnityEngine.Object>())
+                //{
+                //    Debug.Log("LH Co in Go hit " + co.name + "|" + co.tag + "|" + co.GetType());
+                //}
+                //foreach (Part cop in go.GetComponentsInParent<Part>())
+                //{
+                //    Debug.Log("LH  part hit " + FlightGlobals.ActiveVessel.Parts.Contains(cop));
+                //}
 
+                //test code END
+                //Debug.Log("LH Alt " + FlightGlobals.ActiveVessel.pqsAltitude + "|" + FlightGlobals.ActiveVessel.altitude);
+                //Debug.Log("LH START!");
+               // Debug.Log("LH distances" + FlightGlobals.ActiveVessel.mainBody.Radius + "|" + FlightGlobals.ActiveVessel.PQSAltitude());
                 foreach (Part p in partToRay)
                 {
                     try
                     {
                         if (p.collider.enabled) //only check part if it has collider enabled
                         {
+                            
                             Vector3 partEdge = p.collider.ClosestPointOnBounds(FlightGlobals.currentMainBody.position); //find collider edge closest to ground
                             RaycastHit pHit;
-                            Vector3 rayDir = FlightGlobals.currentMainBody.position - partEdge;
+                            Vector3 rayDir = (FlightGlobals.currentMainBody.position - partEdge).normalized;
                             Ray pRayDown = new Ray(partEdge, rayDir);
-                            LayerMask pRayMask = 33792; //layermask does not ignore layer 0, why?
-                            if (Physics.Raycast(pRayDown, out pHit, (float)(FlightGlobals.ActiveVessel.mainBody.Radius + FlightGlobals.ActiveVessel.altitude), pRayMask)) //cast ray
+                            LayerMask testMask = 32769; //hit layer 0 for parts and layer 15 for groud/buildings
+                           // Debug.Log("LH test mask " + testMask.ToString());
+                            //LayerMask testMask = 32769;
+                            //if (Physics.Raycast(pRayDown, out pHit, (float)(FlightGlobals.ActiveVessel.mainBody.Radius + FlightGlobals.ActiveVessel.altitude), pRayMask)) //cast ray
+                            if (Physics.Raycast(pRayDown, out pHit, (float)(FlightGlobals.ActiveVessel.mainBody.Radius + FlightGlobals.ActiveVessel.altitude), testMask)) //cast ray
                             {
-                                //Debug.Log("LH1 " + pHit.distance + "|" + pHit.collider.gameObject.ToString() + "|" + pHit.collider.gameObject.GetComponents<Component>().Length + "||" + pHit.collider.gameObject.GetHashCode());
-                                //Component[] Comps = pHit.collider.gameObject.GetComponents<Component>();
-                                //foreach(Component com in Comps)
-                                //{
-                                //    Debug.Log("LH2 " + com.GetType());
-                                //}
+                               // Debug.Log("LH hit dist orig " + pHit.distance);
+                                if (pHit.collider.gameObject.layer == 15 || pHit.collider.gameObject.layer == 0 && !FlightGlobals.ActiveVessel.parts.Contains(pHit.collider.gameObject.GetComponentInParent<Part>()))
+                                {//valid hit, accept all layer 15 hits but only those on layer 0 when part hit is not part of ActiveVessel
+                                    float hitDist = pHit.distance; //need to do math so make a local variable for it
 
-                                if (pHit.collider.gameObject.GetComponent<ScaledSpaceFader>() == null)
-                                {
-                                    //Debug.Log("LH3 null");
+                                    if(FlightGlobals.ActiveVessel.mainBody.ocean)
+                                    {
+                                        if(FlightGlobals.ActiveVessel.PQSAltitude() < 0) //if negative, over ocean and pqs layer is seabed
+                                        {
+                                            hitDist = hitDist + (float)FlightGlobals.ActiveVessel.PQSAltitude(); //reduce distance of raycast by distance from seabed to sea level, remebed PQSAltitude is negative so 'add' it to reduce the distance
+                                            //Debug.Log("LH hit dist after ocean" + hitDist);
+                                        }
+                                    }
+                               
                                     if (firstRay) //first ray this update, always set height to this
                                     {
 
 
-                                        landHeight = pHit.distance;
+                                        landHeight = hitDist;
 
                                         firstRay = false;
                                         //Debug.Log("LH 3 " + landHeight);
@@ -135,29 +165,11 @@ namespace LandingHeight
                                     else
                                     {
 
-                                        landHeight = Math.Min(landHeight, pHit.distance);
+                                        landHeight = Math.Min(landHeight, hitDist);
                                         //Debug.Log("LH 3a " + landHeight + "|" + pHit.distance);
 
                                     }
                                 }
-                                else
-                                {
-                                    //Debug.Log("LH3a " + pHit.collider.gameObject.GetComponent<ScaledSpaceFader>().fadeStart);
-                                    //landHeight = Math.Min(landHeight, FlightGlobals.ActiveVessel.altitude - FlightGlobals.ActiveVessel.pqsAltitude);
-                                    //firstRay = false;
-                                    if(landHeightBackup != 0)
-                                    {
-                                        landHeightBackup = Math.Min(landHeightBackup, pHit.distance);
-                                    }
-                                    else
-                                    {
-                                        landHeightBackup = pHit.distance;
-                                    }
-                                }
-                                //if (pHit.transform.gameObject.layer != 10 && pHit.transform.gameObject.layer != 15)  //Error trap, ray should only hit layers 10 and 15
-                                //{
-                                //    print(p.name + " " + pHit.transform.gameObject.layer + " " + pHit.collider.name + " " + pHit.distance);
-                                //}
 
                             }
                             else if (!firstRay) //error trap, ray hit nothing
@@ -165,7 +177,7 @@ namespace LandingHeight
                                 landHeight = Math.Min(landHeight, FlightGlobals.ActiveVessel.altitude - FlightGlobals.ActiveVessel.pqsAltitude);
                                 firstRay = false;
                             }
-                            //Debug.Log("LH 1 " + pHit.distance);
+                            //Debug.Log("LH hit dist orig " + pHit.distance);
                         }
                     }
                     catch
@@ -176,11 +188,11 @@ namespace LandingHeight
                     }
 
                 }
-                if(landHeight == 0)
-                {
-                    landHeight = landHeightBackup;
-                }
-                if (!firstRay && landHeight == 0);
+                //if(landHeight == 0)
+                //{
+                //    landHeight = landHeightBackup;
+                //}
+                if (!firstRay && landHeight == 0)
                 {
                     landHeight = FlightGlobals.ActiveVessel.altitude - FlightGlobals.ActiveVessel.pqsAltitude;
                     firstRay = false;
@@ -194,15 +206,15 @@ namespace LandingHeight
                 //Debug.Log("LH 5 " + landHeight);
             }
 
-            if (FlightGlobals.ActiveVessel.mainBody.ocean) //if mainbody has ocean we land on water before the seabed
-            {
-                //Debug.Log("LH 5");
-                if (landHeight > FlightGlobals.ActiveVessel.altitude)
-                {
-                    landHeight = FlightGlobals.ActiveVessel.altitude;
-                    //Debug.Log("LH 6");
-                }
-            }
+            //if (FlightGlobals.ActiveVessel.mainBody.ocean) //if mainbody has ocean we land on water before the seabed
+            //{
+            //    //Debug.Log("LH 5");
+            //    if (landHeight > FlightGlobals.ActiveVessel.altitude)
+            //    {
+            //        landHeight = FlightGlobals.ActiveVessel.altitude;
+            //        //Debug.Log("LH 6");
+            //    }
+            //}
 
             return landHeight;
         }
