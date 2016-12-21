@@ -1,50 +1,193 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 
 
 
 namespace LandingHeight
 {
+
+    public static class LHFlightData
+    {
+        public static int lhGUImodeStatic; //1 auto, hidden text, 2 auto green text, 3 red ASL, 4 red AGL
+    }
+
+    [KSPScenario(ScenarioCreationOptions.AddToAllGames,GameScenes.FLIGHT)]
+    public class LHScenario : ScenarioModule
+    {
+           
+
+        public override void OnLoad(ConfigNode node)
+        {
+            try
+            {
+                LHFlightData.lhGUImodeStatic = int.Parse(node.GetValue("GUIdisplay"));
+            }
+            catch
+            {
+                LHFlightData.lhGUImodeStatic = 1;
+
+            }
+            if(LHFlightData.lhGUImodeStatic <1 || LHFlightData.lhGUImodeStatic > 4)
+            {
+                LHFlightData.lhGUImodeStatic = 1;
+            }
+
+            //Debug.Log("LH Scen " + LHFlightData.lhGUImodeStatic);
+        }
+        public override void OnSave(ConfigNode node)
+        {
+            if(node.HasValue("GUIdisplay"))
+            {
+                node.RemoveValue("GUIdisplay");
+            }
+            node.AddValue("GUIdisplay", LHFlightData.lhGUImodeStatic.ToString());
+        }
+    }
+
+
     [KSPAddon(KSPAddon.Startup.Flight, false)]
     public class LHFlight : MonoBehaviour
     {
-        private KSP.UI.Screens.Flight.AltitudeTumbler _tumbler;
+        private KSP.UI.Screens.Flight.AltitudeTumbler _tumbler; //stock altitude tumbler object
+        public TMPro.TextMeshProUGUI tumblerASLtext; //ASL/AGL text object
+        RectTransform lhGUIrect; //supporting component
+        GameObject lhGUIgo; //master gameObject for ASL/AGL text
+        Button lhBtn; //button for clickage
+        FlightGlobals.SpeedDisplayModes spdDisp;
+
+        
+
         public void Start()
         {
-            Debug.Log("Landing Height v1.9 start.");
+            Debug.Log("Landing Height v2.0 start.");
+        }
+
+       
+
+        public void lhButtonClick()
+        {
+            switch(LHFlightData.lhGUImodeStatic)
+            {
+                case 1:
+                    {
+                        LHFlightData.lhGUImodeStatic = 2;
+                        SetGUITextMode();
+                        break;
+                    }
+                case 2:
+                    {
+                        LHFlightData.lhGUImodeStatic = 3;
+                        SetGUITextMode();
+                        break;
+                    }
+                case 3:
+                    {
+                        LHFlightData.lhGUImodeStatic = 4;
+                        SetGUITextMode();
+                        break;
+                    }
+                case 4:
+                    {
+                        LHFlightData.lhGUImodeStatic = 1;
+                        SetGUITextMode();
+                        break;
+                    }
+                default:
+                    {
+                        LHFlightData.lhGUImodeStatic = 1;
+                        SetGUITextMode();
+                        break;
+                    }
+            }
         }
 
         public void LateUpdate() //modify UI in late update or KSP default overrides afaik
         {
-
-            // print(FlightUIController.speedDisplayMode);
             try
             {
                 if (_tumbler == null || _tumbler.tumbler == null)
                 {
                     _tumbler = UnityEngine.Object.FindObjectOfType<KSP.UI.Screens.Flight.AltitudeTumbler>();
+
+                    lhBtn = _tumbler.gameObject.AddComponent<Button>();
+                    lhBtn.onClick.AddListener(() => { lhButtonClick(); });
+                    AddText();
                 }
-                if (FlightGlobals.speedDisplayMode == FlightGlobals.SpeedDisplayModes.Surface) //only override if in surface mode
+                
+                if (FlightGlobals.speedDisplayMode == FlightGlobals.SpeedDisplayModes.Surface && LHFlightData.lhGUImodeStatic == 1 || FlightGlobals.speedDisplayMode == FlightGlobals.SpeedDisplayModes.Surface && LHFlightData.lhGUImodeStatic == 2 || LHFlightData.lhGUImodeStatic == 4) //only override if in surface mode
                 {
-                    //UnityEngine.Object[] tumblers = UnityEngine.Object.FindObjectsOfType<KSP.UI.Screens.Flight.AltitudeTumbler>();
-                    //Debug.Log("cnt " + tumblers.Length);
-                    //FlightUIController.speedDisplayMode.
-                    //FlightUIController UI = FlightUIController.fetch;
-                    //UI.alt.setValue(heightToLand());
                     _tumbler.tumbler.SetValue(heightToLand());
-                    //Debug.Log(FlightUIController.fetch.alt.
-                    //FlightUIController.fetch.alt.setValue(heightToLand());
+                }
+                if(spdDisp != FlightGlobals.speedDisplayMode) //how we detect mouse click on speed display mode.
+                {
+                    SetGUITextMode();
                 }
             }
             catch
             {
-                //Debug.Log("LH " + e);
                 //no tumbler object found, we hit this on scene change, silently fail
             }
+        }
 
+        public void AddText()
+        {
+            lhGUIgo = new GameObject("LHGUI");
+            lhGUIrect = lhGUIgo.AddComponent<RectTransform>();
+            lhGUIrect.SetParent(lhGUIgo.transform, false);
+            tumblerASLtext = lhGUIgo.AddComponent<TMPro.TextMeshProUGUI>();
+            lhGUIgo.transform.SetParent(_tumbler.transform.GetChild(0).gameObject.GetComponent<RectTransform>());
+            tumblerASLtext.transform.localPosition = new Vector3(.5f, -.8f, 0); //CRITICAL, set this because defaults block tumbler number rendering
 
+            tumblerASLtext.alignment = TMPro.TextAlignmentOptions.Center;
+            tumblerASLtext.fontSize = 16;
+            tumblerASLtext.fontStyle = TMPro.FontStyles.Bold;
+            tumblerASLtext.font = Resources.Load("Fonts/Arial SDF", typeof(TMPro.TMP_FontAsset)) as TMPro.TMP_FontAsset;
+
+            SetGUITextMode();
+
+        }
+
+        public void SetGUITextMode()
+        {
+            switch (LHFlightData.lhGUImodeStatic)
+            {
+                case 1:
+                    {
+                        tumblerASLtext.text = "";
+                        break;
+                    }
+                case 2:
+                    {
+                        if (FlightGlobals.speedDisplayMode == FlightGlobals.SpeedDisplayModes.Surface) //only override if in surface mode
+                        {
+                            tumblerASLtext.text = "AGL";
+                        }
+                        else
+                        {
+                            tumblerASLtext.text = "ASL";
+                        }
+
+                        tumblerASLtext.color = Color.green;
+                        break;
+                    }
+                case 3:
+                    {
+                        tumblerASLtext.text = "ASL";
+                        tumblerASLtext.color = Color.red;
+                        break;
+                    }
+                case 4:
+                    {
+                        tumblerASLtext.text = "AGL";
+                        tumblerASLtext.color = Color.red;
+                        break;
+                    }
+            }
+            spdDisp = FlightGlobals.speedDisplayMode;
+                    
         }
 
         public class partDist //part's distace to CelestialBody CoM for distance sort

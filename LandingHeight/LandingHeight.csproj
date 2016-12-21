@@ -45,6 +45,9 @@
       <HintPath>..\..\..\1.2.2 Dev\KSP_x64_Data\Managed\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>..\..\..\1.2.2 Dev\KSP_x64_Data\Managed\UnityEngine.UI.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="LHFlight.cs" />
