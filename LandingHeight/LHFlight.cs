@@ -62,7 +62,7 @@ namespace LandingHeight
 
         public void Start()
         {
-            Debug.Log("Landing Height v2.0 start.");
+            Debug.Log("Landing Height v2.1 start.");
         }
 
        
@@ -142,8 +142,8 @@ namespace LandingHeight
             tumblerASLtext.transform.localPosition = new Vector3(.5f, -.8f, 0); //CRITICAL, set this because defaults block tumbler number rendering
 
             tumblerASLtext.alignment = TMPro.TextAlignmentOptions.Center;
-            tumblerASLtext.fontSize = 16;
-            tumblerASLtext.fontStyle = TMPro.FontStyles.Bold;
+            tumblerASLtext.fontSize = 14;
+            tumblerASLtext.fontStyle = TMPro.FontStyles.Normal;
             tumblerASLtext.font = Resources.Load("Fonts/Arial SDF", typeof(TMPro.TMP_FontAsset)) as TMPro.TMP_FontAsset;
 
             SetGUITextMode();
@@ -196,6 +196,18 @@ namespace LandingHeight
             public float dist;
         }
 
+        public double doubleMax(double val1, double val2)
+        {
+            if (val1 > val2)
+            {
+                return val1;
+            }
+            else
+            {
+                return val2;
+            }
+        }
+
         public double heightToLand() //leave public so other mods can call
         {
             double landHeight = 0;
@@ -210,14 +222,24 @@ namespace LandingHeight
                 landHeightBackup = 0;
                 //Debug.Log("LH-A");
             }
-            else if (FlightGlobals.ActiveVessel.altitude - FlightGlobals.ActiveVessel.pqsAltitude > 2400) //raycast goes wierd outside physics range
+            else if ((FlightGlobals.ActiveVessel.mainBody.ocean && (FlightGlobals.ActiveVessel.altitude - doubleMax(FlightGlobals.ActiveVessel.pqsAltitude,0)) > 2400) || (!FlightGlobals.ActiveVessel.mainBody.ocean && (FlightGlobals.ActiveVessel.altitude - FlightGlobals.ActiveVessel.pqsAltitude) > 2400)) //raycast goes wierd outside physics range
             {
-                landHeight = FlightGlobals.ActiveVessel.altitude - FlightGlobals.ActiveVessel.pqsAltitude; //more then 2400 above ground, just use vessel CoM
-                landHeightBackup = FlightGlobals.ActiveVessel.altitude - FlightGlobals.ActiveVessel.pqsAltitude; //more then 2400 above ground, just use vessel CoM
+                //Debug.Log("LH " + FlightGlobals.ActiveVessel.altitude + "|" + FlightGlobals.ActiveVessel.pqsAltitude + "|" + FlightGlobals.ActiveVessel.mainBody.Radius);
+                if (FlightGlobals.ActiveVessel.mainBody.ocean)
+                {
+                    landHeight = FlightGlobals.ActiveVessel.altitude - doubleMax(FlightGlobals.ActiveVessel.pqsAltitude,0); //more then 2400 above ground, just use vessel CoM
+                    landHeightBackup = FlightGlobals.ActiveVessel.altitude - doubleMax(FlightGlobals.ActiveVessel.pqsAltitude,0); //more then 2400 above ground, just use vessel CoM
+                }
+                else
+                {
+                    landHeight = FlightGlobals.ActiveVessel.altitude - FlightGlobals.ActiveVessel.pqsAltitude; //more then 2400 above ground, just use vessel CoM
+                    landHeightBackup = FlightGlobals.ActiveVessel.altitude - FlightGlobals.ActiveVessel.pqsAltitude; //more then 2400 above ground, just use vessel CoM
+                }
                 //Debug.Log("LH-B");
             }
             else //inside physics range, goto raycast
             {
+                //Debug.Log("LH-c");
                 List<Part> partToRay = new List<Part>(); //list of parts to ray
                 if (FlightGlobals.ActiveVessel.Parts.Count < 50) //if less then 50 parts, just raycast all parts
                 {
